@@ -13,12 +13,9 @@ const SKIP_VALUE = '__skip__';
 // 全部基于 @inquirer/* modular API，避免与老 inquirer 9.x 混用导致 stdin
 // readline 残留监听器（按上下键失效、需先按回车的根因）。
 export const promptHelper = {
-  // 单选列表
-  async select<T extends string>(message: string, choices: { name: string; value: T }[]): Promise<T> {
-    return await select<T>({
-      message,
-      choices: choices.map(c => ({ name: c.name, value: c.value })),
-    });
+  // 单选列表。传 signal 可在外部条件满足时中断（抛 AbortPromptError），用于重新渲染菜单
+  async select<T>(message: string, choices: { name: string; value: T }[], signal?: AbortSignal): Promise<T> {
+    return await select<T>({ message, choices }, { signal });
   },
 
   // 密码/隐藏输入
@@ -43,7 +40,7 @@ export const promptHelper = {
           { name: `${theme.icon('✔')} ${t('confirm_yes')}`, value: true },
         ];
 
-    return await select<boolean>({ message, choices });
+    return await promptHelper.select<boolean>(message, choices);
   },
 
   // 按回车继续（不显示 Yes/No，仅等待用户按回车）
@@ -52,12 +49,8 @@ export const promptHelper = {
   },
 
   // 多选列表
-  async checkbox<T extends string>(message: string, choices: { name: string; value: T }[]): Promise<T[]> {
-    return await checkbox<T>({
-      message,
-      choices: choices.map(c => ({ name: c.name, value: c.value })),
-      pageSize: 15,
-    });
+  async checkbox<T>(message: string, choices: { name: string; value: T }[], signal?: AbortSignal): Promise<T[]> {
+    return await checkbox<T>({ message, choices, pageSize: 15 }, { signal });
   },
 
   // 搜索+自动补全选择（同时展示输入框和可滚动列表，支持自定义输入和跳过）
